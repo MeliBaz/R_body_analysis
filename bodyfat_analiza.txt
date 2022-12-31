@@ -1,0 +1,161 @@
+
+> Dataset <- read.table("C:/Users/melisa/OneDrive/Radna površina/bodyfat.TXT", header=TRUE, stringsAsFactors=TRUE, 
++   sep="", na.strings="NA", dec=".", strip.white=TRUE)
+
+> with(Dataset, (t.test(weight, alternative='two.sided', mu=0.0, conf.level=.95)))
+
+	One Sample t-test
+
+data:  weight
+t = 96.646, df = 251, p-value < 2.2e-16
+alternative hypothesis: true mean is not equal to 0
+95 percent confidence interval:
+ 175.2783 182.5706
+sample estimates:
+mean of x 
+ 178.9244 
+#Pomoću single sample t-testa možemo ispitati srednje vrijednosti u zadanim intervalima pouzdanosti 
+#Za tjelesnu masu  u intervalu pouzdanosti od 95%  dobivamo 178.9244
+
+
+> with(Dataset, (t.test(height, alternative='two.sided', mu=0.0, conf.level=.95)))
+
+	One Sample t-test
+
+data:  height
+t = 427.69, df = 251, p-value < 2.2e-16
+alternative hypothesis: true mean is not equal to 0
+95 percent confidence interval:
+ 69.98378 70.63130
+sample estimates:
+mean of x 
+ 70.30754 
+#Za varijablu visina za interval pouzdanosti od 95% imamo da je srednja vrijednost 70.30754
+#Prije nego što uradimo testove normalnosti, zbog njihovih osjetljivosti možemo prvo pogledati histograme za date varijable
+
+> with(Dataset, Hist(height, scale="frequency", breaks="Sturges", col="darkgray"))
+#Sa histograma za varijablu visina možemo uočiti da imamo asimetriju, pa je pogodno da uradimo Shapiro-Wilks test.
+
+> library(abind, pos=16)
+
+> library(e1071, pos=17)
+
+> normalityTest(~height, test="shapiro.test", data=Dataset)
+
+	Shapiro-Wilk normality test
+
+data:  height
+W = 0.99255, p-value = 0.2372
+#Na osnovu vrijednosti p=0.2372 mozemo zaključiti da se radi o normalnoj raspodjeli, jer je p>0.05.
+#Ovo je dobra informacija zbog obrade koju smo izvršili prethodno, jer 
+#t-test je korektan ukoliko možemo predpostaviti da varijable zadovoljavaju normalnu
+#raspodjelu, što je u našem slucaju zadvoljeno.
+ 
+#Isti postupak radimo i za tjelesnu masu
+
+
+> with(Dataset, Hist(weight, scale="frequency", breaks="Sturges", col="darkgray"))
+#Na histogramu možemo uočiti veliku frekvenciju centralne vrijednosti i zbog toga možemo uraditi chi-square test normalnosti 
+
+> normalityTest(~weight, test="pearson.test", data=Dataset)
+
+	Pearson chi-square normality test
+
+data:  weight
+P = 20.635, p-value = 0.193
+# Dobili smo p-value = 0.193 sto je vece od 0.05, a to znaci da prihvatamo hipotezu da se radi o normalnoj raspodjeli 
+# Kod ispitivanja veze između gustoće tijela i udjela masnog tkiva prvo ćemo pogledati kako izgleda njihova ovisnost
+
+> scatterplot(density~bodyfat, regLine=FALSE, smooth=FALSE, boxplots=FALSE, data=Dataset)
+#Sa ovog grafika možemo zaključiti da se radi o negativnoj vezi kod koje podaci vrlo malo odstupaju od fitovane prave, tako da ovu vezu mozemo predstaviti i linearnim modelom. 
+> RegModel.1 <- lm(density~bodyfat, data=Dataset)
+
+> summary(RegModel.1)
+
+Call:
+lm(formula = density ~ bodyfat, data = Dataset)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-0.0032571 -0.0002888 -0.0001607  0.0001070  0.0102145 
+
+Coefficients:
+                Estimate   Std. Error t value Pr(>|t|)    
+(Intercept)  1.098685545  0.000127182  8638.7   <2e-16 ***
+bodyfat     -0.002257389  0.000006087  -370.8   <2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.0008071 on 250 degrees of freedom
+Multiple R-squared:  0.9982,	Adjusted R-squared:  0.9982 
+F-statistic: 1.375e+05 on 1 and 250 DF,  p-value: < 2.2e-16
+#Ovakav model možemo predstaviti jednačinom pravca density=1.098685545-0.002257389*bodyfat
+#Da bismo potvrdili da se radi o negativnoj vezi i da bismo odredili jačinu uraditi ćemo korelacioni test
+> with(Dataset, cor.test(bodyfat, density, alternative="two.sided", method="pearson"))
+
+	Pearson's product-moment correlation
+
+data:  bodyfat and density
+t = -370.83, df = 250, p-value < 2.2e-16
+alternative hypothesis: true correlation is not equal to 0
+95 percent confidence interval:
+ -0.9992919 -0.9988364
+sample estimates:
+       cor 
+-0.9990923 
+#Koeficijent korelacije je -0.9990923, sto znači da imamo jaku negativnu vezu.
+#p vrijednost je dosta manja od 0.05 te odbacujemo nultu hipotezu da nema korelacije.
+# Sada ćemo ispitati korelaciju između obima nadlaktice i podlaktice 
+
+> with(Dataset, cor.test(biceps, forearm, alternative="two.sided", method="pearson"))
+
+	Pearson's product-moment correlation
+
+data:  biceps and forearm
+t = 14.594, df = 250, p-value < 2.2e-16
+alternative hypothesis: true correlation is not equal to 0
+95 percent confidence interval:
+ 0.6054254 0.7398207
+sample estimates:
+      cor 
+0.6782551
+# Koeficijen korelacije je pozitivan, pa imamo pozitivnu vezu između ove dvije velicine.
+
+> with(Dataset, cor.test(abdomen, weight, alternative="two.sided", method="pearson"))
+
+	Pearson's product-moment correlation
+
+data:  abdomen and weight
+t = 30.532, df = 250, p-value < 2.2e-16
+alternative hypothesis: true correlation is not equal to 0
+95 percent confidence interval:
+ 0.8586427 0.9115424
+sample estimates:
+      cor 
+0.8879949 
+# Također na osnovu koeficijenta korelacija možemo zaključiti da se radi o pozitivnoj jakoj vezi. Vrijednost p je dosta manja od 0.05, te je 
+#nulta hipoteza da nema korelacije odbačena
+# Jednačinu pravca mozemo dobiti preko linearne regresije
+> RegModel.2 <- lm(abdomen~weight, data=Dataset)
+
+> summary(RegModel.2)
+
+Call:
+lm(formula = abdomen ~ weight, data = Dataset)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-13.9903  -3.0936   0.2501   3.1306  16.4870 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 34.26038    1.93478   17.71   <2e-16 ***
+weight       0.32581    0.01067   30.53   <2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 4.969 on 250 degrees of freedom
+Multiple R-squared:  0.7885,	Adjusted R-squared:  0.7877 
+F-statistic: 932.2 on 1 and 250 DF,  p-value: < 2.2e-16
+#Jednačina pravca abdomen=34.26038+0.32581*weight
+
